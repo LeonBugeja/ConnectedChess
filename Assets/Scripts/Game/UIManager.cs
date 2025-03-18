@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityChess;
 using UnityEngine;
 using UnityEngine.UI;
-using Unity.Netcode;
 
 /// <summary>
 /// Manages the user interface of the chess game, including promotion UI, move history,
@@ -37,9 +36,9 @@ public class UIManager : MonoBehaviourSingleton<UIManager> {
 	[SerializeField, Range(-0.25f, 0.25f)] private float buttonColorDarkenAmount = 0f;
 	// Darkening factor for alternate move history row colours (range -0.25 to 0.25).
 	[SerializeField, Range(-0.25f, 0.25f)] private float moveHistoryAlternateColorDarkenAmount = 0f;
-
-    // Timeline to keep track of the full move UI elements in sequence.
-    private Timeline<FullMoveUI> moveUITimeline;
+	
+	// Timeline to keep track of the full move UI elements in sequence.
+	private Timeline<FullMoveUI> moveUITimeline;
 	// Computed button colour based on the background colour and darkening factor.
 	private Color buttonColor;
 
@@ -66,13 +65,13 @@ public class UIManager : MonoBehaviourSingleton<UIManager> {
 			backgroundColor.g - buttonColorDarkenAmount, 
 			backgroundColor.b - buttonColorDarkenAmount
 		);
-    }
+	}
 
-    /// <summary>
-    /// Handles the event when a new game starts.
-    /// Clears previous move history, updates UI fields, and resets result text.
-    /// </summary>
-    private void OnNewGameStarted() {
+	/// <summary>
+	/// Handles the event when a new game starts.
+	/// Clears previous move history, updates UI fields, and resets result text.
+	/// </summary>
+	private void OnNewGameStarted() {
 		// Update the serialized game string input field.
 		UpdateGameStringInputField();
 		// Validate turn indicator images.
