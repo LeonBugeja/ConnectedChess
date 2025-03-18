@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityChess;
 using UnityEngine;
+using Unity.Netcode;
 using static UnityChess.SquareUtil;
 
 /// <summary>
@@ -20,53 +21,52 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager> {
 	// The vertical offset for placing the board (height above the base).
 	private const float BoardHeight = 1.6f;
 
-	/// <summary>
-	/// Awake is called when the script instance is being loaded.
-	/// Sets up the board, subscribes to game events, and creates the square GameObjects.
-	/// </summary>
-	private void Awake() {
-		// Subscribe to game events to update the board when a new game starts or when the game is reset.
-		GameManager.NewGameStartedEvent += OnNewGameStarted;
-		GameManager.GameResetToHalfMoveEvent += OnGameResetToHalfMove;
-		
-		// Initialise the dictionary to map board squares to GameObjects.
-		positionMap = new Dictionary<Square, GameObject>(64);
-		// Get the transform of the board.
-		Transform boardTransform = transform;
-		// Store the board's position.
-		Vector3 boardPosition = boardTransform.position;
-		
-		// Loop over files (columns) and ranks (rows) to create each square.
-		for (int file = 1; file <= 8; file++) {
-			for (int rank = 1; rank <= 8; rank++) {
-				// Create a new GameObject for the square with its name based on chess notation.
-				GameObject squareGO = new GameObject(SquareToString(file, rank)) {
-					// Set the position of the square relative to the board's position.
-					transform = {
-						position = new Vector3(
-							boardPosition.x + FileOrRankToSidePosition(file),
-							boardPosition.y + BoardHeight,
-							boardPosition.z + FileOrRankToSidePosition(rank)
-						),
-						parent = boardTransform // Make the square a child of the board.
-					},
-					// Tag the GameObject as "Square" for identification.
-					tag = "Square"
-				};
+	//public Side PlayerSide;
 
-				// Add the square and its GameObject to the position map.
-				positionMap.Add(new Square(file, rank), squareGO);
-				// Store the square GameObject in the array at the corresponding index.
-				allSquaresGO[(file - 1) * 8 + (rank - 1)] = squareGO;
-			}
-		}
-	}
+    /// <summary>
+    /// Awake is called when the script instance is being loaded.
+    /// Sets up the board, subscribes to game events, and creates the square GameObjects.
+    /// </summary>
+    private void Awake()
+    {
+        // Subscribe to game events to update the board when a new game starts or when the game is reset.
+        GameManager.NewGameStartedEvent += OnNewGameStarted;
+        GameManager.GameResetToHalfMoveEvent += OnGameResetToHalfMove;
 
-	/// <summary>
-	/// Called when a new game is started.
-	/// Clears the board and places pieces according to the new game state.
-	/// </summary>
-	private void OnNewGameStarted() {
+        positionMap = new Dictionary<Square, GameObject>(64);
+        Transform boardTransform = transform;
+        Vector3 boardPosition = boardTransform.position;
+
+        for (int file = 1; file <= 8; file++)
+        {
+            for (int rank = 1; rank <= 8; rank++)
+            {
+                GameObject squareGO = new GameObject(SquareToString(file, rank))
+                {
+                    transform =
+                {
+                    position = new Vector3(
+                        boardPosition.x + FileOrRankToSidePosition(file),
+                        boardPosition.y + BoardHeight,
+                        boardPosition.z + FileOrRankToSidePosition(rank)
+                    ),
+                    parent = boardTransform
+                },
+                    tag = "Square"
+                };
+
+
+                positionMap.Add(new Square(file, rank), squareGO);
+                allSquaresGO[(file - 1) * 8 + (rank - 1)] = squareGO;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Called when a new game is started.
+    /// Clears the board and places pieces according to the new game state.
+    /// </summary>
+    private void OnNewGameStarted() {
 		// Remove all existing visual pieces.
 		ClearBoard();
 		
@@ -117,12 +117,7 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager> {
 		rookGO.transform.localPosition = Vector3.zero;
 	}
 
-	/// <summary>
-	/// Instantiates and places the visual representation of a piece on the board.
-	/// </summary>
-	/// <param name="piece">The chess piece to display.</param>
-	/// <param name="position">The board square where the piece should be placed.</param>
-	public void CreateAndPlacePieceGO(Piece piece, Square position) {
+    public void CreateAndPlacePieceGO(Piece piece, Square position) {
 		// Construct the model name based on the piece's owner and type.
 		string modelName = $"{piece.Owner} {piece.GetType().Name}";
 		// Instantiate the piece GameObject from the corresponding resource.
@@ -132,13 +127,13 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager> {
 		);
 	}
 
-	/// <summary>
-	/// Retrieves all square GameObjects within a specified radius of a world-space position.
-	/// </summary>
-	/// <param name="squareGOs">A list to be populated with the found square GameObjects.</param>
-	/// <param name="positionWS">The world-space position to check around.</param>
-	/// <param name="radius">The radius within which to search.</param>
-	public void GetSquareGOsWithinRadius(List<GameObject> squareGOs, Vector3 positionWS, float radius) {
+    /// <summary>
+    /// Retrieves all square GameObjects within a specified radius of a world-space position.
+    /// </summary>
+    /// <param name="squareGOs">A list to be populated with the found square GameObjects.</param>
+    /// <param name="positionWS">The world-space position to check around.</param>
+    /// <param name="radius">The radius within which to search.</param>
+    public void GetSquareGOsWithinRadius(List<GameObject> squareGOs, Vector3 positionWS, float radius) {
 		// Compute the square of the radius for efficiency.
 		float radiusSqr = radius * radius;
 		// Iterate over all square GameObjects.
@@ -173,8 +168,9 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager> {
 			// Get the corresponding chess piece from the board.
 			Piece piece = GameManager.Instance.CurrentBoard[pieceBehaviour.CurrentSquare];
 			// Enable the piece only if it belongs to the specified side and has legal moves.
-			pieceBehaviour.enabled = pieceBehaviour.PieceColor == side
-			                         && GameManager.Instance.HasLegalMoves(piece);
+			pieceBehaviour.enabled = pieceBehaviour.PieceColor == side //if its x's turn
+									 //&& pieceBehaviour.PieceColor == PlayerSide //and player is x
+                                     && GameManager.Instance.HasLegalMoves(piece); //and move is legal
 		}
 	}
 
