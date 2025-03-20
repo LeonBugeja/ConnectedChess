@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityChess;
 using UnityEngine;
 using Unity.Netcode;
+using UnityEngine.UI;
 using static UnityChess.SquareUtil;
 
 /// <summary>
@@ -20,6 +21,9 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager> {
 	private const float BoardPlaneSideHalfLength = BoardPlaneSideLength * 0.5f;
 	// The vertical offset for placing the board (height above the base).
 	private const float BoardHeight = 1.6f;
+
+    // Text element to display whos turn it is (e.g. white, black).
+    [SerializeField] private Text turnText = null;
 
     /// <summary>
     /// Awake is called when the script instance is being loaded.
@@ -162,7 +166,10 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager> {
 		VisualPiece[] visualPiece = GetComponentsInChildren<VisualPiece>(true);
 		SetActiveAllPieces(false);
 
-		foreach (VisualPiece pieceBehaviour in visualPiece)
+		//notify players whose turn it is
+        turnText.text = $"{side.ToString()}'s Turn";
+
+        foreach (VisualPiece pieceBehaviour in visualPiece)
         {
             Piece piece = GameManager.Instance.CurrentBoard[pieceBehaviour.CurrentSquare];
 

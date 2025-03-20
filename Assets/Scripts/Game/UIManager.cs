@@ -15,8 +15,8 @@ public class UIManager : MonoBehaviourSingleton<UIManager> {
 	[SerializeField] private GameObject promotionUI = null;
 	// Text element to display game result messages (e.g. win, draw).
 	[SerializeField] private Text resultText = null;
-	// Input field to display and edit the serialized game state string.
-	[SerializeField] private InputField GameStringInputField = null;
+    // Input field to display and edit the serialized game state string.
+    [SerializeField] private InputField GameStringInputField = null;
 	// Indicator image for White's turn.
 	[SerializeField] private Image whiteTurnIndicator = null;
 	// Indicator image for Black's turn.
@@ -121,9 +121,8 @@ public class UIManager : MonoBehaviourSingleton<UIManager> {
 		// Enable the appropriate turn indicator.
 		whiteTurnIndicator.enabled = sideToMove == Side.White;
 		blackTurnIndicator.enabled = sideToMove == Side.Black;
-
-		// Retrieve the latest half-move and add it to the move history UI.
-		GameManager.Instance.HalfMoveTimeline.TryGetCurrent(out HalfMove lastMove);
+        // Retrieve the latest half-move and add it to the move history UI.
+        GameManager.Instance.HalfMoveTimeline.TryGetCurrent(out HalfMove lastMove);
 		AddMoveToHistory(lastMove, sideToMove.Complement());
 	}
 
