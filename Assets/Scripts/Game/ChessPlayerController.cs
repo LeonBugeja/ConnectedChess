@@ -20,8 +20,6 @@ public class ChessPlayerController : NetworkBehaviour
                 _ => Side.White
             };
 
-            //BoardManager.Instance.PlayerSide = PlayerSide;
-
             Debug.Log($"Player {OwnerClientId} assigned as {PlayerSide}");
         }
     }
@@ -49,5 +47,10 @@ public class ChessPlayerController : NetworkBehaviour
     {
         PlayerSide = side;
         Debug.Log($"Assigned as {side}");
+    }
+
+    private void Update()
+    {
+        
     }
 }

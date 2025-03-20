@@ -21,8 +21,6 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager> {
 	// The vertical offset for placing the board (height above the base).
 	private const float BoardHeight = 1.6f;
 
-	//public Side PlayerSide;
-
     /// <summary>
     /// Awake is called when the script instance is being loaded.
     /// Sets up the board, subscribes to game events, and creates the square GameObjects.
@@ -54,7 +52,6 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager> {
                 },
                     tag = "Square"
                 };
-
 
                 positionMap.Add(new Square(file, rank), squareGO);
                 allSquaresGO[(file - 1) * 8 + (rank - 1)] = squareGO;
@@ -163,16 +160,24 @@ public class BoardManager : MonoBehaviourSingleton<BoardManager> {
 	public void EnsureOnlyPiecesOfSideAreEnabled(Side side) {
 		// Retrieve all VisualPiece components in child objects.
 		VisualPiece[] visualPiece = GetComponentsInChildren<VisualPiece>(true);
-		// Loop over each VisualPiece.
-		foreach (VisualPiece pieceBehaviour in visualPiece) {
-			// Get the corresponding chess piece from the board.
-			Piece piece = GameManager.Instance.CurrentBoard[pieceBehaviour.CurrentSquare];
-			// Enable the piece only if it belongs to the specified side and has legal moves.
-			pieceBehaviour.enabled = pieceBehaviour.PieceColor == side //if its x's turn
-									 //&& pieceBehaviour.PieceColor == PlayerSide //and player is x
-                                     && GameManager.Instance.HasLegalMoves(piece); //and move is legal
-		}
-	}
+		SetActiveAllPieces(false);
+
+		foreach (VisualPiece pieceBehaviour in visualPiece)
+        {
+            Piece piece = GameManager.Instance.CurrentBoard[pieceBehaviour.CurrentSquare];
+
+            if (NetworkManager.Singleton.IsHost && side.ToString() == "White")
+			{
+                pieceBehaviour.enabled = pieceBehaviour.PieceColor == side
+                                     && GameManager.Instance.HasLegalMoves(piece);
+            }else if (!NetworkManager.Singleton.IsHost && side.ToString() == "Black")
+            {
+                pieceBehaviour.enabled = pieceBehaviour.PieceColor == side
+                                     && GameManager.Instance.HasLegalMoves(piece);
+            }
+
+        }
+    }
 
 	/// <summary>
 	/// Destroys the visual representation of a piece at the specified square.

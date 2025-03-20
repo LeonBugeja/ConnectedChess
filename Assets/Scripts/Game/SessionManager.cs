@@ -10,6 +10,11 @@ public class SessionManager : MonoBehaviour
 {
     public NetworkManager NetworkManager;
 
+    public NetworkStringManager networkStringManager;
+    public InputField BoardState;
+
+    public GameObject Board;
+
     public TMP_InputField SessionCodeInput;
     public TMP_Text ErrorMessageText;
     public Button HostButton;
@@ -29,6 +34,13 @@ public class SessionManager : MonoBehaviour
         {
             NetworkManager.OnClientDisconnectCallback += OnClientDisconnected;
         }
+
+        if (networkStringManager != null && BoardState != null)
+        {
+            BoardState.onValueChanged.AddListener(OnBoardStateValueChanged);
+
+            networkStringManager.OnSharedStringChanged += HandleSharedStringChanged;
+        }
     }
 
     private void StartHost()
@@ -37,6 +49,7 @@ public class SessionManager : MonoBehaviour
         {
             Debug.Log("Starting Host...");
             NetworkManager.StartHost();
+            GameManager.Instance.StartNewGame();
         }
     }
 
@@ -58,7 +71,10 @@ public class SessionManager : MonoBehaviour
 
         Debug.Log($"Joining session with code: {sessionCode}");
         NetworkManager.GetComponent<UnityTransport>().SetConnectionData(sessionCode, 7777); //set the IP/Port
+        GameManager.Instance.StartNewGame();
+        Board.transform.rotation = Quaternion.Euler(new Vector3(0, 180, 0));
         NetworkManager.StartClient();
+
     }
 
     private bool IsValidSessionCode(string sessionCode)
@@ -74,6 +90,16 @@ public class SessionManager : MonoBehaviour
 
     private void OnClientDisconnected(ulong clientId)
     {
+        if (networkStringManager != null)
+        {
+            networkStringManager.OnSharedStringChanged -= HandleSharedStringChanged;
+        }
+
+        if (BoardState != null)
+        {
+            BoardState.onValueChanged.RemoveListener(OnBoardStateValueChanged);
+        }
+
         Debug.LogWarning($"Client {clientId} disconnected.");
 
         if (!NetworkManager.IsServer && clientId == NetworkManager.LocalClientId)
@@ -86,5 +112,22 @@ public class SessionManager : MonoBehaviour
     {
         Debug.LogError("Connection to the server failed. Please check your session code and try again.");
         DisplayErrorMessage("Connection failed. Please try again.");
+    }
+
+    private void OnBoardStateValueChanged(string newValue)
+    {
+        networkStringManager.UpdateSharedString(newValue);
+    }
+
+    private void HandleSharedStringChanged(string newValue, bool isLocalChange)
+    {
+        if (!isLocalChange && BoardState.text != newValue)
+        {
+            BoardState.onValueChanged.RemoveListener(OnBoardStateValueChanged);
+
+            BoardState.text = newValue;
+
+            BoardState.onValueChanged.AddListener(OnBoardStateValueChanged);
+        }
     }
 }
