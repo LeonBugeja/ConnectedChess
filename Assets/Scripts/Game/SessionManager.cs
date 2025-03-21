@@ -49,7 +49,6 @@ public class SessionManager : MonoBehaviour
         {
             Debug.Log("Starting Host...");
             NetworkManager.StartHost();
-            GameManager.Instance.StartNewGame();
         }
     }
 
@@ -71,9 +70,11 @@ public class SessionManager : MonoBehaviour
 
         Debug.Log($"Joining session with code: {sessionCode}");
         NetworkManager.GetComponent<UnityTransport>().SetConnectionData(sessionCode, 7777); //set the IP/Port
-        GameManager.Instance.StartNewGame();
+
         //rotate the board so player black sees the black pieces at the bottom
+        GameManager.Instance.StartNewGame();
         Board.transform.rotation = Quaternion.Euler(new Vector3(0, 180, 0));
+
         NetworkManager.StartClient();
 
         //update chess pieces for rejoining players

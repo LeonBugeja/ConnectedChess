@@ -26,6 +26,7 @@ public class ChessPlayerController : NetworkBehaviour
             }else
             {
                 Debug.Log($"Player {OwnerClientId} (Client), has been assigned to {PlayerSide}");
+                GameManager.Instance.StartNewGame();
             }
         }
     }
