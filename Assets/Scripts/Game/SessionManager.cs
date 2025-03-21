@@ -76,6 +76,8 @@ public class SessionManager : MonoBehaviour
         Board.transform.rotation = Quaternion.Euler(new Vector3(0, 180, 0));
         NetworkManager.StartClient();
 
+        //update chess pieces for rejoining players
+        //GameManager.Instance.LoadGame(networkStringManager.SharedString.Value.ToString());
     }
 
     private bool IsValidSessionCode(string sessionCode)

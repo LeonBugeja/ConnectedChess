@@ -10,7 +10,7 @@ public class NetworkStringManager : NetworkBehaviour
     public NetworkVariable<FixedString128Bytes> SharedString = new NetworkVariable<FixedString128Bytes>(
         string.Empty,
         NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Owner);
+        NetworkVariableWritePermission.Server);
 
     public InputField GameStringInput;
 
@@ -42,28 +42,12 @@ public class NetworkStringManager : NetworkBehaviour
 
     public void UpdateSharedString(string newValue)
     {
-        if (!IsOwner)
-        {
-            StartCoroutine(RequestOwnershipAndApplyUpdate(newValue));
-        }
-        else
-        {
-            SharedString.Value = new FixedString128Bytes(newValue);
-        }
-    }
-
-    private IEnumerator RequestOwnershipAndApplyUpdate(string newValue)
-    {
-        RequestOwnershipServerRpc();
-
-        yield return SharedString.Value = new FixedString128Bytes(newValue);
+        UpdateSharedStringServerRpc(newValue);
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void RequestOwnershipServerRpc(ServerRpcParams serverRpcParams = default)
+    private void UpdateSharedStringServerRpc(string newValue, ServerRpcParams serverRpcParams = default)
     {
-        ulong clientId = serverRpcParams.Receive.SenderClientId;
-
-        NetworkObject.ChangeOwnership(clientId);
+        SharedString.Value = new FixedString128Bytes(newValue);
     }
 }

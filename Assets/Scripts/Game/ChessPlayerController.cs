@@ -20,7 +20,13 @@ public class ChessPlayerController : NetworkBehaviour
                 _ => Side.White
             };
 
-            Debug.Log($"Player {OwnerClientId} assigned as {PlayerSide}");
+            if (OwnerClientId == 0)
+            {
+                Debug.Log($"Player {OwnerClientId} (Host), has been assigned to {PlayerSide}");
+            }else
+            {
+                Debug.Log($"Player {OwnerClientId} (Client), has been assigned to {PlayerSide}");
+            }
         }
     }
 
@@ -32,21 +38,6 @@ public class ChessPlayerController : NetworkBehaviour
         {
             Debug.Log($"Player {OwnerClientId} disconnected.");
         }
-    }
-
-    public void AssignPlayerSide(Side side)
-    {
-        if (IsServer)
-        {
-            AssignPlayerSideClientRpc(side);
-        }
-    }
-
-    [ClientRpc]
-    protected void AssignPlayerSideClientRpc(Side side)
-    {
-        PlayerSide = side;
-        Debug.Log($"Assigned as {side}");
     }
 
     private void Update()
