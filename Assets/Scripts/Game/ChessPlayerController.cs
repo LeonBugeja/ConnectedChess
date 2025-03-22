@@ -6,6 +6,14 @@ public class ChessPlayerController : NetworkBehaviour
 {
     public Side PlayerSide { get; private set; }
 
+    private NetworkGameStatus _gameStatus;
+
+    private void Start()
+    {
+        GameObject gameManager = GameObject.Find("GameManager");
+        _gameStatus = gameManager.GetComponentInChildren<NetworkGameStatus>();
+    }
+
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -37,12 +45,11 @@ public class ChessPlayerController : NetworkBehaviour
 
         if (IsServer)
         {
-            Debug.Log($"Player {OwnerClientId} disconnected.");
+            _gameStatus.RequestGameStatusUpdate("Opponent resigned.");
         }
-    }
-
-    private void Update()
-    {
-        
+        else
+        {
+            _gameStatus.RequestGameStatusUpdate("Host resigned.");
+        }
     }
 }
