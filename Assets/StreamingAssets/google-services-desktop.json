@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "86757829143",
+    "project_id": "connected-chess",
+    "storage_bucket": "connected-chess.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:86757829143:android:7b1a230878f683a6b08a52",
+        "android_client_info": {
+          "package_name": "com.unity.chess"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUJIPq7H6fSb7pxu-T9pquctVdm1S2_0A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
