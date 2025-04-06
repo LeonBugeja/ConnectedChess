@@ -15,77 +15,47 @@ public class DLCManager : NetworkBehaviour
     private int balance = 150;
     public TMP_Text CreditsText;
 
-    public Button buyBlueDLCButton;
-    public Button buyRedDLCButton;
+    public Button buyGreenDLCButton;
+    public Button buyMixedDLCButton;
+
+    public Sprite defaultAvatar;
+
+    public Image localPlayerAvatarImage;
+    public Image opponentAvatarImage;
 
     private string isEquipped = "";
 
-    public Transform Board;
-
     void Start()
     {
-        buyBlueDLCButton.onClick.AddListener(() => BuyDLC("Blue"));
-        buyRedDLCButton.onClick.AddListener(() => BuyDLC("Red"));
+        buyGreenDLCButton.onClick.AddListener(() => BuyDLC("Green"));
+        buyMixedDLCButton.onClick.AddListener(() => BuyDLC("Mixed"));
+
+        LoadEquippedAvatar();
+
+        NetworkManager.Singleton.OnClientConnectedCallback += OnPlayerJoined;
+        NetworkManager.Singleton.OnClientDisconnectCallback += OnPlayerLeft;
     }
 
     void Update()
     {
         CreditsText.text = balance.ToString();
-
-        foreach (Transform Square in Board.transform)
-        {
-            if (Square.childCount > 0)
-            {
-                if (Board.transform.childCount != 0)
-                {
-                    string ownerColor = IsHost ? "White" : "Black";
-
-                    foreach (Transform boardSquare in Board)
-                    {
-                        foreach (Transform piece in boardSquare)
-                        {
-                            if (piece.name.Contains(ownerColor))
-                            {
-                                Renderer renderer = piece.GetComponent<Renderer>();
-                                if (renderer != null)
-                                {
-                                    string matPath = $"PieceSets/Marble/DLC/{PlayerPrefs.GetString("Equipped")}Pieces/{PlayerPrefs.GetString("Equipped")} {piece.name.Replace("(Clone)", "").Trim().Split(' ')[1]}";
-                                    Material equippedMaterial = Resources.Load<Material>(matPath);
-
-                                    renderer.material = equippedMaterial;
-                                }
-                            }
-                        }
-                    }
-
-                    isEquipped = PlayerPrefs.GetString("Equipped");
-                }
-            }
-        }
     }
 
     public void enableDLCui()
     {
-        if (NetworkManager.Singleton.IsListening)
+        storeGUI.SetActive(true);
+
+        TMP_Text greenDlcButtonText = buyGreenDLCButton.GetComponentInChildren<TMP_Text>();
+        TMP_Text mixedDlcButtonText = buyMixedDLCButton.GetComponentInChildren<TMP_Text>();
+
+        if (PlayerPrefs.GetString("OwnedSkins").Contains("Green"))
         {
-            storeGUI.SetActive(true);
-
-            TMP_Text blueDlcButtonText = buyBlueDLCButton.GetComponentInChildren<TMP_Text>();
-            TMP_Text redDlcButtonText = buyRedDLCButton.GetComponentInChildren<TMP_Text>();
-
-            if (PlayerPrefs.GetString("OwnedSkins").Contains("Blue"))
-            {
-                blueDlcButtonText.text = "Owned";
-            }
-
-            if (PlayerPrefs.GetString("OwnedSkins").Contains("Red"))
-            {
-                redDlcButtonText.text = "Owned";
-            }
+            greenDlcButtonText.text = "Owned";
         }
-        else
+
+        if (PlayerPrefs.GetString("OwnedSkins").Contains("Mixed"))
         {
-            Debug.Log("Host/Join a game to go online and access the DLC Store");
+            mixedDlcButtonText.text = "Owned";
         }
     }
 
@@ -100,46 +70,39 @@ public class DLCManager : NetworkBehaviour
         {
             FirebaseStorage storage = FirebaseStorage.DefaultInstance;
             StorageReference storageRef = storage.GetReferenceFromUrl("gs://connected-chess.firebasestorage.app/");
+            string localDir = $"{Application.persistentDataPath}/DLCs";
 
-            string[] pieceTypes = { "Bishop", "King", "Knight", "Pawn", "Queen", "Rook" };
+            StorageReference avatarRef = storageRef.Child($"{color}Pawn.png");
 
-            foreach (string pieceType in pieceTypes)
+            if (!Directory.Exists(localDir))
             {
-                StorageReference materialRef = storageRef.Child($"dlc/{color.ToLower()}Pieces/{color} {pieceType}.mat");
-
-                string localDir = $"Assets/Resources/PieceSets/Marble/DLC/{color}Pieces";
-                if (!Directory.Exists(localDir))
-                {
-                    Directory.CreateDirectory(localDir);
-                }
-
-                string localFilePath = $"{localDir}/{color} {pieceType}.mat";
-                await materialRef.GetFileAsync(localFilePath);
-                Debug.Log($"Downloaded: {pieceType} material");
+                Directory.CreateDirectory(localDir);
             }
 
-            #if UNITY_EDITOR
-                UnityEditor.AssetDatabase.Refresh();
-            #endif
-
-            Debug.Log($"All {color} piece materials downloaded successfully!");
+            string localFilePath = $"{localDir}/{color}Pawn.png";
+            await avatarRef.GetFileAsync(localFilePath);
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"Error downloading DLC: {e.Message}");
+            Debug.LogError($"Error downloading Avatar: {e.Message}");
         }
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void NotifyDLCBoughtServerRpc(string color)
+    private void NotifyDLCEquippedServerRpc(string color, ulong clientId)
     {
-        NotifyDLCBoughtClientRpc(color);
+        NotifyDLCEquippedClientRpc(color, clientId);
     }
 
     [ClientRpc]
-    private void NotifyDLCBoughtClientRpc(string color)
+    private void NotifyDLCEquippedClientRpc(string color, ulong clientId)
     {
-        Debug.Log($"DLC '{color}' has been bought by another player!");
+        Debug.Log($"DLC '{color}' avatar has been equipped by player with ID: {clientId}");
+
+        if (clientId != NetworkManager.Singleton.LocalClientId)
+        {
+            UpdateOpponentAvatar(color);
+        }
     }
 
     private async void BuyDLC(string color)
@@ -150,16 +113,85 @@ public class DLCManager : NetworkBehaviour
         {
             balance -= dlcPrice;
 
-            Debug.Log("Starting DLC download...");
+            Debug.Log("Downloading Avatar...");
             await DownloadDLC(color);
-            Debug.Log("DLC download completed!");
+            Debug.Log("Avatar downloaded!");
 
             string currentlyOwned = PlayerPrefs.GetString("OwnedSkins");
             PlayerPrefs.SetString("OwnedSkins", $"{color}, {currentlyOwned}");
 
             PlayerPrefs.SetString("Equipped", color);
 
-            NotifyDLCBoughtServerRpc(color);
+            UpdateLocalPlayerAvatar(color);
+            NotifyDLCEquippedServerRpc(color, NetworkManager.Singleton.LocalClientId);
         }
+        else
+        {
+            PlayerPrefs.SetString("Equipped", color);
+            UpdateLocalPlayerAvatar(color);
+            NotifyDLCEquippedServerRpc(color, NetworkManager.Singleton.LocalClientId);
+        }
+
+        PlayerPrefs.Save();
+    }
+
+    private void LoadEquippedAvatar()
+    {
+        string equippedColor = PlayerPrefs.GetString("Equipped");
+        if (!string.IsNullOrEmpty(equippedColor))
+        {
+            UpdateLocalPlayerAvatar(equippedColor);
+            NotifyDLCEquippedServerRpc(equippedColor, NetworkManager.Singleton.LocalClientId);
+        }
+    }
+
+    private void UpdateLocalPlayerAvatar(string color)
+    {
+        string localFilePath = $"{Application.persistentDataPath}/DLCs/{color}Pawn.png";
+
+        if (File.Exists(localFilePath))
+        {
+            byte[] imageData = File.ReadAllBytes(localFilePath);
+            Texture2D texture = new Texture2D(2, 2);
+            texture.LoadImage(imageData);
+
+            localPlayerAvatarImage.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
+        }
+        else
+        {
+            Debug.LogError($"Avatar file for color '{color}' not found!");
+        }
+    }
+
+    private void UpdateOpponentAvatar(string color)
+    {
+        string localFilePath = $"{Application.persistentDataPath}/DLCs/{color}Pawn.png";
+
+        if (File.Exists(localFilePath))
+        {
+            byte[] imageData = File.ReadAllBytes(localFilePath);
+            Texture2D texture = new Texture2D(2, 2);
+            texture.LoadImage(imageData);
+
+            opponentAvatarImage.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
+        }
+        else
+        {
+            Debug.LogError($"Avatar file for color '{color}' not found!");
+        }
+    }
+
+    private void OnPlayerJoined(ulong clientId)
+    {
+        string equippedColor = PlayerPrefs.GetString("Equipped");
+        if (!string.IsNullOrEmpty(equippedColor))
+        {
+            NotifyDLCEquippedServerRpc(equippedColor, NetworkManager.Singleton.LocalClientId);
+        }
+    }
+
+    private void OnPlayerLeft(ulong clientId)
+    {
+        opponentAvatarImage.sprite = defaultAvatar;
     }
 }
