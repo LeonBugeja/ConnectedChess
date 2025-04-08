@@ -3572,6 +3572,18 @@ MonoBehaviour:
   defaultAvatar: {fileID: 21300000, guid: 3e448ec559ca41841903a67320ba6161, type: 3}
   localPlayerAvatarImage: {fileID: 1357710978}
   opponentAvatarImage: {fileID: 608321953}
+--- !u!114 &1636279214
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1636279202}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cae445b89a56e8545928701901074c45, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1731765555
 GameObject:
   m_ObjectHideFlags: 0
@@ -7903,6 +7915,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1636279211}
+    - targetCorrespondingSourceObject: {fileID: 7463109367895200372, guid: caf93e4ddc2f0544cbddf4e2facb7fd7,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1636279214}
     - targetCorrespondingSourceObject: {fileID: 6172282428428721384, guid: caf93e4ddc2f0544cbddf4e2facb7fd7,
         type: 3}
       insertIndex: -1

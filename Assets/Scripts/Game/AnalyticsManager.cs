@@ -1,64 +1,91 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Analytics;
+using Unity.Services.Core;
+using Unity.Services.Analytics;
 
 public class AnalyticsManager : MonoBehaviour
 {
-    private string sessionID = Guid.NewGuid().ToString();
+    public static AnalyticsManager Instance { get; private set; }
+
+    private string sessionID;
+    private DateTime matchStartTime;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+
+        InitializeAnalytics();
+    }
+
+    private async void InitializeAnalytics()
+    {
+        sessionID = Guid.NewGuid().ToString();
+        try
+        {
+            await UnityServices.InitializeAsync();
+            AnalyticsService.Instance.StartDataCollection();
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Failed to initialize Unity Services: {e.Message}");
+        }
+    }
 
     public void LogMatchStart()
     {
-        Dictionary<string, object> eventData = new Dictionary<string, object>
+        matchStartTime = DateTime.UtcNow;
+        CustomEvent eventData = new CustomEvent("match_start")
         {
             { "session_id", sessionID },
-            { "event_name", "match_start" },
-            { "timestamp", DateTime.UtcNow.ToString("o") } //ISO 8601 timestamp
+            { "timestamp_string", matchStartTime.ToString("o") }
         };
-
-        SendEvent("match_start", eventData);
+        SendEvent(eventData);
     }
 
-    public void LogMatchEnd(int score, float duration)
+    public void LogMatchEnd(string result)
     {
-        Dictionary<string, object> eventData = new Dictionary<string, object>
+        DateTime endTime = DateTime.UtcNow;
+        TimeSpan duration = endTime - matchStartTime;
+        CustomEvent eventData = new CustomEvent("match_end")
         {
             { "session_id", sessionID },
-            { "event_name", "match_end" },
-            { "timestamp", DateTime.UtcNow.ToString("o") },
-            { "score", score },
-            { "duration_seconds", duration }
+            { "timestamp_string", endTime.ToString("o") },
+            { "duration_seconds", duration.TotalSeconds },
+            { "result", result }
         };
-
-        SendEvent("match_end", eventData);
+        SendEvent(eventData);
     }
 
-    public void LogDLCPurchase(string dlcName, float price, string currency)
+    public void LogDLCPurchase(string dlcName, int price)
     {
-        Dictionary<string, object> eventData = new Dictionary<string, object>
+        CustomEvent eventData = new CustomEvent("dlc_purchase")
         {
             { "session_id", sessionID },
-            { "event_name", "dlc_purchase" },
-            { "timestamp", DateTime.UtcNow.ToString("o") },
+            { "timestamp_string", DateTime.UtcNow.ToString("o") },
             { "dlc_name", dlcName },
-            { "price", price },
-            { "currency", currency }
+            { "price", price }
         };
-
-        SendEvent("dlc_purchase", eventData);
+        SendEvent(eventData);
     }
 
-    private void SendEvent(string eventName, Dictionary<string, object> data)
+    private void SendEvent(CustomEvent eventData)
     {
-        AnalyticsResult result = Analytics.CustomEvent(eventName, data);
-
-        if (result == AnalyticsResult.Ok)
+        try
         {
-            Debug.Log($"Event '{eventName}' logged successfully.");
+            AnalyticsService.Instance.RecordEvent(eventData);
+            Debug.Log("Event logged successfully.");
         }
-        else
+        catch (Exception e)
         {
-            Debug.LogError($"Failed to log event '{eventName}'. Error: {result}");
+            Debug.LogError($"Failed to log event. Error: {e.Message}");
         }
     }
 }

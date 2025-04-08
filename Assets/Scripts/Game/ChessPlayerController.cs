@@ -35,6 +35,8 @@ public class ChessPlayerController : NetworkBehaviour
             {
                 Debug.Log($"Player {OwnerClientId} (Client), has been assigned to {PlayerSide}");
                 GameManager.Instance.StartNewGame();
+
+                AnalyticsManager.Instance.LogMatchStart();
             }
         }
     }
@@ -46,10 +48,12 @@ public class ChessPlayerController : NetworkBehaviour
         if (IsServer)
         {
             _gameStatus.RequestGameStatusUpdate("Opponent resigned.");
+            AnalyticsManager.Instance.LogMatchEnd("Black Resigned");
         }
         else
         {
             _gameStatus.RequestGameStatusUpdate("Host resigned.");
+            AnalyticsManager.Instance.LogMatchEnd("White Resigned");
         }
     }
 }

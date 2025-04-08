@@ -122,6 +122,8 @@ public class DLCManager : NetworkBehaviour
 
             PlayerPrefs.SetString("Equipped", color);
 
+            AnalyticsManager.Instance.LogDLCPurchase(color + "ColoredAvatar", dlcPrice);
+
             UpdateLocalPlayerAvatar(color);
             NotifyDLCEquippedServerRpc(color, NetworkManager.Singleton.LocalClientId);
         }

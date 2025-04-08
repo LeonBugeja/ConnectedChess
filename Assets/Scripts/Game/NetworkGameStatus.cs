@@ -81,10 +81,12 @@ public class NetworkGameStatus : NetworkBehaviour
         if (IsServer)
         {
             UpdateGameStatus(newValue);
+            AnalyticsManager.Instance.LogMatchEnd(newValue);
         }
         else
         {
             UpdateGameStatusServerRpc(newValue);
+            AnalyticsManager.Instance.LogMatchEnd(newValue);
         }
     }
 }
