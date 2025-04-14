@@ -5,6 +5,10 @@ using UnityChess;
 using UnityEngine.UI;
 using Unity.Netcode.Transports.UTP;
 using TMPro;
+using Firebase.Storage;
+using Firebase.Extensions;
+using System;
+using System.IO;
 
 public class SessionManager : MonoBehaviour
 {
@@ -19,9 +23,12 @@ public class SessionManager : MonoBehaviour
     public TMP_Text ErrorMessageText;
     public Button HostButton;
     public Button JoinButton;
+    public Button SaveButton;
+    public Button RestoreButton;
     public Button ResignButton;
 
     private bool resigned = false;
+    private string GUID = Guid.NewGuid().ToString();
 
     private Coroutine connectionTimeoutCoroutine;
 
@@ -31,6 +38,8 @@ public class SessionManager : MonoBehaviour
         {
             HostButton.onClick.AddListener(StartHost);
             JoinButton.onClick.AddListener(JoinAsClient);
+            SaveButton.onClick.AddListener(SaveGame);
+            RestoreButton.onClick.AddListener(RestoreGame);
             ResignButton.onClick.AddListener(ResignFromMatch);
         }
 
@@ -93,6 +102,58 @@ public class SessionManager : MonoBehaviour
             NetworkManager.Singleton.Shutdown();
         }
     }
+
+    private void SaveGame()
+    {
+        string session = BoardState.text;
+
+        byte[] data = System.Text.Encoding.UTF8.GetBytes(session);
+
+        string fileName = $"session_{GUID}.txt";
+
+        StorageReference storageRef = FirebaseStorage.DefaultInstance.RootReference.Child(fileName);
+
+        storageRef.PutBytesAsync(data)
+            .ContinueWithOnMainThread(task =>
+            {
+                if (task.IsFaulted || task.IsCanceled)
+                {
+                    Debug.LogError($"Upload failed: {task.Exception?.ToString()}");
+                    DisplayErrorMessage("Failed to save game. Please try again.");
+                }
+            });
+    }
+
+    private async void RestoreGame()
+    {
+        string fileName = $"session_{GUID}.txt";
+
+        try
+        {
+            FirebaseStorage storage = FirebaseStorage.DefaultInstance;
+            StorageReference storageRef = storage.GetReferenceFromUrl("gs://connected-chess.firebasestorage.app/");
+            string localDir = $"{Application.persistentDataPath}/Saves";
+
+            StorageReference sessionRef = storageRef.Child(fileName);
+
+            if (!Directory.Exists(localDir))
+            {
+                Directory.CreateDirectory(localDir);
+            }
+
+            string localFilePath = $"{localDir}/{fileName}";
+            await sessionRef.GetFileAsync(localFilePath);
+
+            string session = File.ReadAllText(localFilePath);
+            BoardState.text = session;
+            GameManager.Instance.LoadGame(session);
+        }
+        catch (System.Exception e)
+        {
+            DisplayErrorMessage($"Error restoring game: {e.Message}");
+        }
+    }
+
 
     private bool IsValidSessionCode(string sessionCode)
     {
