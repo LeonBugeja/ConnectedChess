@@ -19,6 +19,9 @@ public class SessionManager : MonoBehaviour
     public TMP_Text ErrorMessageText;
     public Button HostButton;
     public Button JoinButton;
+    public Button ResignButton;
+
+    private bool resigned = false;
 
     private Coroutine connectionTimeoutCoroutine;
 
@@ -28,6 +31,7 @@ public class SessionManager : MonoBehaviour
         {
             HostButton.onClick.AddListener(StartHost);
             JoinButton.onClick.AddListener(JoinAsClient);
+            ResignButton.onClick.AddListener(ResignFromMatch);
         }
 
         if (NetworkManager != null)
@@ -81,6 +85,15 @@ public class SessionManager : MonoBehaviour
         //GameManager.Instance.LoadGame(networkStringManager.SharedString.Value.ToString());
     }
 
+    private void ResignFromMatch()
+    {
+        if (NetworkManager != null)
+        {
+            resigned = true;
+            NetworkManager.Singleton.Shutdown();
+        }
+    }
+
     private bool IsValidSessionCode(string sessionCode)
     {
         System.Net.IPAddress ipAddress;
@@ -106,10 +119,12 @@ public class SessionManager : MonoBehaviour
 
         Debug.LogWarning($"Client {clientId} disconnected.");
 
-        if (!NetworkManager.IsServer && clientId == NetworkManager.LocalClientId)
+        if (!NetworkManager.IsServer && clientId == NetworkManager.LocalClientId && !resigned)
         {
             HandleConnectionFailure();
         }
+
+        resigned = false;
     }
 
     private void HandleConnectionFailure()
